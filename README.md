@@ -1,2 +1,2 @@
 # SparkOS
-Custom Android OS Based On AOSP
+SparkOS — an Android-based operating system. Awakening. Rebellion. Efficiency.
