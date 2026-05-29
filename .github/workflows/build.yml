@@ -46,12 +46,11 @@ jobs:
         chmod a+x ~/.bin/repo
         echo "$HOME/.bin" >> $GITHUB_PATH
 
-    - name: Sync Pure AOSP Files (Ultra-Lean Group Filtering)
+    - name: Sync Pure AOSP Files (Corrected Lean Filter)
       run: |
         mkdir -p ~/aosp && cd ~/aosp
-        # Enforcing a shallow clone (--depth=1) and filtering out platform/device bloat
-        repo init --depth=1 --partial-clone --no-use-superproject -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50 -g default,-device,-pdk,-partner
-        # Dropping parallel sync threads to -j4 to conserve system memory allocations
+        # We REMOVED '-pdk' from exclusions because it contains the vital build tools!
+        repo init --depth=1 --partial-clone --no-use-superproject -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50 -g default,-device,-partner
         repo sync -c -j4 --no-tags --no-clone-bundle --force-sync
 
     - name: Inject SparkOS Architecture & Overlays
