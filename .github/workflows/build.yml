@@ -1,7 +1,10 @@
 name: SparkOS Core Builder
 
 on:
-  workflow_dispatch: # Triggers the compilation instantly from your phone
+  push:
+    branches:
+      - main # Triggers the build automatically whenever you commit code to main
+  workflow_dispatch: # Keeps the manual "Run workflow" button active on your phone
 
 jobs:
   compile-sparkos:
@@ -36,11 +39,9 @@ jobs:
 
     - name: Inject SparkOS Architecture & Overlays
       run: |
-        # Inject custom branding, drop-down tile structures, and logo files 
         if [ -d "$GITHUB_WORKSPACE/overlay" ]; then
           rsync -avq $GITHUB_WORKSPACE/overlay/ ~/aosp/
         fi
-        # Execute the layout modifications script
         chmod +x $GITHUB_WORKSPACE/inject_branding.sh
         $GITHUB_WORKSPACE/inject_branding.sh
 
