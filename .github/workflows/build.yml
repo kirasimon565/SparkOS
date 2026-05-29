@@ -3,8 +3,8 @@ name: SparkOS Core Builder
 on:
   push:
     branches:
-      - main # Triggers the build automatically whenever you commit code to main
-  workflow_dispatch: # Keeps the manual "Run workflow" button active on your phone
+      - main
+  workflow_dispatch:
 
 jobs:
   compile-sparkos:
@@ -13,6 +13,21 @@ jobs:
     steps:
     - name: Checkout SparkOS Controller
       uses: actions/checkout@v4
+
+    - name: Maximize Cloud Disk Space (Aggressive Purge)
+      run: |
+        echo "======================================================="
+        echo "   PURGING UNUSED RUNTIMES TO RECLAIM STORAGE          "
+        echo "======================================================="
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        sudo rm -rf /opt/hostedtoolcache/CodeQL
+        sudo rm -rf /usr/local/share/chromium
+        sudo docker image prune --all --force
+        sudo apt-get clean
+        echo "Current Free Space Status:"
+        df -h /
 
     - name: Configure Linux Build Environment
       run: |
@@ -31,11 +46,13 @@ jobs:
         chmod a+x ~/.bin/repo
         echo "$HOME/.bin" >> $GITHUB_PATH
 
-    - name: Sync Pure AOSP Files
+    - name: Sync Pure AOSP Files (Shallow Clone Mode)
       run: |
         mkdir -p ~/aosp && cd ~/aosp
-        repo init --partial-clone --no-use-superproject -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50
-        repo sync -c -j8 --no-tags --no-clone-bundle
+        # Added --depth=1 to completely skip downloading Git commit histories
+        repo init --depth=1 --partial-clone --no-use-superproject -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50
+        # Enforcing current-branch only sync to prevent data overhead
+        repo sync -c -j8 --no-tags --no-clone-bundle --force-sync
 
     - name: Inject SparkOS Architecture & Overlays
       run: |
