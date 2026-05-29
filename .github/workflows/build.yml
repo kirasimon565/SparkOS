@@ -1,0 +1,66 @@
+name: SparkOS Core Builder
+
+on:
+  workflow_dispatch: # Triggers the compilation instantly from your phone
+
+jobs:
+  compile-sparkos:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout SparkOS Controller
+      uses: actions/checkout@v4
+
+    - name: Configure Linux Build Environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git-core gnupg flex bison build-essential zip curl zlib1g-dev libncurses5-dev libssl-dev bc liblz4-tool python3 rsync
+
+    - name: Initialize Git Identity
+      run: |
+        git config --global user.name "SparkOS Developer"
+        git config --global user.email "developer@sparkos.internal"
+
+    - name: Install Google Repo Engine
+      run: |
+        mkdir -p ~/.bin
+        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/.bin/repo
+        chmod a+x ~/.bin/repo
+        echo "$HOME/.bin" >> $GITHUB_PATH
+
+    - name: Sync Pure AOSP Files
+      run: |
+        mkdir -p ~/aosp && cd ~/aosp
+        repo init --partial-clone --no-use-superproject -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50
+        repo sync -c -j8 --no-tags --no-clone-bundle
+
+    - name: Inject SparkOS Architecture & Overlays
+      run: |
+        # Inject custom branding, drop-down tile structures, and logo files 
+        if [ -d "$GITHUB_WORKSPACE/overlay" ]; then
+          rsync -avq $GITHUB_WORKSPACE/overlay/ ~/aosp/
+        fi
+        # Execute the layout modifications script
+        chmod +x $GITHUB_WORKSPACE/inject_branding.sh
+        $GITHUB_WORKSPACE/inject_branding.sh
+
+    - name: Run AOSP Compiler
+      run: |
+        cd ~/aosp
+        source build/envsetup.sh
+        lunch aosp_arm64-trunk_staging-userdebug
+        m systemimage -j$(nproc)
+
+    - name: Package Flashable GSI Artifacts
+      run: |
+        cd ~/aosp/out/target/product/generic_arm64/
+        xz -z -9 system.img
+        
+    - name: Upload SparkOS to Github Releases
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ~/aosp/out/target/product/generic_arm64/system.img.xz
+        tag_name: sparkos-alpha-v1
+        name: SparkOS Alpha Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
