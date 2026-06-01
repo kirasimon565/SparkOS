@@ -23,9 +23,10 @@ jobs:
 
     - name: Configure Secure Cloud Authentication
       run: |
-        # Fixed: Writing the credentials as a clean JSON object to prevent parsing crashes
+        # Fixed: Added the vital "host" parameter so the client knows where the cloud servers live
         cat <<EOF > $HOME/crave.conf
         {
+          "host": "https://foss.crave.io",
           "username": "${{ secrets.CRAVE_USERNAME }}",
           "token": "${{ secrets.CRAVE_TOKEN }}"
         }
