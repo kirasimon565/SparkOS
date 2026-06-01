@@ -48,7 +48,6 @@ jobs:
         echo "   FETCHING ASSIGNED PROJECT ID FROM CRAVE CORES       "
         echo "======================================================="
         cd $HOME
-        # Fixed: Using strict single quotes so Bash leaves the Awk column selectors alone
         PROJECT_ID=$(crave -c $HOME/crave.conf list | awk '$1 ~ /^[0-9]+$/ {print $1; exit}')
         echo "Detected Project ID: $PROJECT_ID"
         
@@ -64,7 +63,7 @@ jobs:
         echo "======================================================="
         echo "   LAUNCHING SPARKOS ENGINE ON REMOTE BUILD NODES      "
         echo "======================================================="
-        cd $HOME
+        # Removed "cd $HOME" so the tool executes within the valid Git repository context
         crave -c $HOME/crave.conf run --projectID ${{ env.CRAVE_PROJECT_ID }} --no-patch -- "
           # 1. Initialize stable original AOSP build tree mapping
           repo init -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50
@@ -95,13 +94,13 @@ jobs:
 
     - name: Pull Compiled SparkOS Build Back Natively
       run: |
-        cd $HOME
+        # Removed "cd $HOME" so it downloads directly back into the execution workspace
         crave -c $HOME/crave.conf pull --projectID ${{ env.CRAVE_PROJECT_ID }} out/target/product/generic_arm64/system.img.xz
 
     - name: Upload SparkOS Flashable Release
       uses: softprops/action-gh-release@v2
       with:
-        files: /home/runner/out/target/product/generic_arm64/system.img.xz
+        files: out/target/product/generic_arm64/system.img.xz
         tag_name: sparkos-alpha-v1
         name: SparkOS Alpha Release
       env:
