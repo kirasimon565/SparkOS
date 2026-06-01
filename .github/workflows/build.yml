@@ -42,22 +42,14 @@ jobs:
             json.dump(config, f, indent=4)
         '
 
-    - name: Print Allowed Project Names
-      run: |
-        echo "======================================================="
-        echo "       YOUR OFFICIAL PERMITTED PROJECTS LIST           "
-        echo "======================================================="
-        # This will output the exact target names allowed for your crave.yaml file
-        crave -c $HOME/crave.conf list || true
-
     - name: Create Workspace Blueprint (crave.yaml)
       run: |
         echo "======================================================="
-        echo "   WRITING MODERN CONFIG TO WORKSPACE ROOT            "
+        echo "   WRITING OFFICIAL AOSP POOL CONFIG TO WORKSPACE      "
         echo "======================================================="
-        # NOTE: Change "Base Project Name" below to match an exact Name from the step above
+        # Locked to the exact community project name matching your account profile
         cat <<EOF > $GITHUB_WORKSPACE/crave.yaml
-        "Base Project Name":
+        aosp:
           ignoreClientHostname: true
         EOF
 
@@ -67,7 +59,8 @@ jobs:
         echo "   LAUNCHING SPARKOS ENGINE ON REMOTE BUILD NODES      "
         echo "======================================================="
         cd $GITHUB_WORKSPACE
-        crave -c $HOME/crave.conf run --no-patch -- "
+        # Explicitly passing projectID 35 to map to the public AOSP base tree allocation
+        crave -c $HOME/crave.conf run --projectID 35 --no-patch -- "
           # 1. Initialize stable original AOSP build tree mapping
           repo init -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50
           
@@ -98,7 +91,7 @@ jobs:
     - name: Pull Compiled SparkOS Build Back Natively
       run: |
         cd $GITHUB_WORKSPACE
-        crave -c $HOME/crave.conf pull out/target/product/generic_arm64/system.img.xz
+        crave -c $HOME/crave.conf pull --projectID 35 out/target/product/generic_arm64/system.img.xz
 
     - name: Upload SparkOS Flashable Release
       uses: softprops/action-gh-release@v2
