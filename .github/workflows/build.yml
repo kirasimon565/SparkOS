@@ -58,12 +58,25 @@ jobs:
         fi
         echo "CRAVE_PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
 
+    - name: Create Project Workspace Blueprint
+      run: |
+        echo "======================================================="
+        echo "   GENERATING WORKSPACE BLUEPRINT FILE (CRAVE.JSON)    "
+        echo "======================================================="
+        # Injects the mandatory environment mapping so Crave mounts the pre-cached AOSP node
+        cat <<EOF > crave.json
+        {
+          "workspace": {
+            "baseDirectory": "aosp"
+          }
+        }
+        EOF
+
     - name: Execute Remote AOSP Compile Sequence
       run: |
         echo "======================================================="
         echo "   LAUNCHING SPARKOS ENGINE ON REMOTE BUILD NODES      "
         echo "======================================================="
-        # Removed "cd $HOME" so the tool executes within the valid Git repository context
         crave -c $HOME/crave.conf run --projectID ${{ env.CRAVE_PROJECT_ID }} --no-patch -- "
           # 1. Initialize stable original AOSP build tree mapping
           repo init -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50
@@ -94,7 +107,6 @@ jobs:
 
     - name: Pull Compiled SparkOS Build Back Natively
       run: |
-        # Removed "cd $HOME" so it downloads directly back into the execution workspace
         crave -c $HOME/crave.conf pull --projectID ${{ env.CRAVE_PROJECT_ID }} out/target/product/generic_arm64/system.img.xz
 
     - name: Upload SparkOS Flashable Release
