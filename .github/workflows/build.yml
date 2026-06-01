@@ -23,10 +23,12 @@ jobs:
 
     - name: Configure Secure Cloud Authentication
       run: |
+        # Fixed: Writing the credentials as a clean JSON object to prevent parsing crashes
         cat <<EOF > $HOME/crave.conf
-        [User]
-        username = ${{ secrets.CRAVE_USERNAME }}
-        token = ${{ secrets.CRAVE_TOKEN }}
+        {
+          "username": "${{ secrets.CRAVE_USERNAME }}",
+          "token": "${{ secrets.CRAVE_TOKEN }}"
+        }
         EOF
 
     - name: Detect Crave Project ID Dynamically
@@ -34,7 +36,6 @@ jobs:
         echo "======================================================="
         echo "   FETCHING ASSIGNED PROJECT ID FROM CRAVE CORES       "
         echo "======================================================="
-        # Moving out of the git workspace prevents crave from triggering Zero-Conf checks
         cd $HOME
         PROJECT_ID=$(crave -c $HOME/crave.conf list | awk '$1 ~ /^[0-9]+$/ {print $1; exit}')
         echo "Detected Project ID: $PROJECT_ID"
