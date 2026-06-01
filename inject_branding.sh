@@ -1,7 +1,7 @@
 #!/bin/bash
 # SparkOS Framework Injection Script
 
-AOSP_DIR="$HOME/aosp"
+AOSP_DIR="."
 
 echo "======================================================="
 echo "   REWRITING GOOGLE AOSP SYSTEM STRINGS FOR SPARKOS    "
@@ -11,6 +11,7 @@ echo "======================================================="
 BUILD_PROP="$AOSP_DIR/build/make/core/sysprop.mk"
 if [ -f "$BUILD_PROP" ]; then
     sed -i 's/BUILD_DISPLAY_ID := .*/BUILD_DISPLAY_ID := SparkOS-Alpha-v1.0/g' $BUILD_PROP
+    echo "-> Successfully modified Build Display ID."
 fi
 
 # 2. Modify system core product variables
@@ -20,6 +21,7 @@ if [ -f "$PRODUCT_CONFIG" ]; then
     sed -i 's/PRODUCT_BRAND := .*/PRODUCT_BRAND := SparkOS/g' $PRODUCT_CONFIG
     sed -i 's/PRODUCT_MANUFACTURER := .*/PRODUCT_MANUFACTURER := SparkOS/g' $PRODUCT_CONFIG
     sed -i 's/PRODUCT_DEVICE := .*/PRODUCT_DEVICE := sparkos_arm64/g' $PRODUCT_CONFIG
+    echo "-> Successfully modified Core Product Variables."
 fi
 
 echo "Framework modifications complete. SparkOS variables locked."
