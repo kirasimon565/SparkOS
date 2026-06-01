@@ -22,15 +22,21 @@ jobs:
         echo "${HOME}/bin" >> $GITHUB_PATH
 
     - name: Configure Secure Cloud Authentication
+      env:
+        CRAVE_USER: ${{ secrets.CRAVE_USERNAME }}
+        CRAVE_TOK: ${{ secrets.CRAVE_TOKEN }}
       run: |
-        # Fixed: Added the vital "host" parameter so the client knows where the cloud servers live
-        cat <<EOF > $HOME/crave.conf
-        {
-          "host": "https://foss.crave.io",
-          "username": "${{ secrets.CRAVE_USERNAME }}",
-          "token": "${{ secrets.CRAVE_TOKEN }}"
+        # Using Python to write the JSON file perfectly preserves special characters like $ or \
+        python3 -c '
+        import os, json
+        config = {
+            "host": "https://foss.crave.io",
+            "username": os.environ["CRAVE_USER"],
+            "token": os.environ["CRAVE_TOK"]
         }
-        EOF
+        with open(os.path.expanduser("~/crave.conf"), "w") as f:
+            json.dump(config, f, indent=4)
+        '
 
     - name: Detect Crave Project ID Dynamically
       run: |
@@ -54,7 +60,7 @@ jobs:
         echo "   LAUNCHING SPARKOS ENGINE ON REMOTE BUILD NODES      "
         echo "======================================================="
         cd $HOME
-        crave -c $HOME/crave.conf run --projectID ${{ env.CRAVE_PROJECT_ID }} --no-patch -- '
+        crave -c $HOME/crave.conf run --projectID ${{ env.CRAVE_PROJECT_ID }} --no-patch -- "
           # 1. Initialize stable original AOSP build tree mapping
           repo init -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50
           
@@ -65,7 +71,7 @@ jobs:
           git clone https://github.com/kirasimon565/SparkOS.git -b main sparkos_overlay
           
           # 4. Seamlessly smash your cinematic boot assets over Google stock frameworks
-          if [ -d "sparkos_overlay/overlay" ]; then
+          if [ -d \"sparkos_overlay/overlay\" ]; then
             rsync -avq sparkos_overlay/overlay/ ./
           fi
           
@@ -80,7 +86,7 @@ jobs:
           
           # 7. High-efficiency compression of the output partition artifact
           xz -z -9 out/target/product/generic_arm64/system.img
-        '
+        "
 
     - name: Pull Compiled SparkOS Build Back Natively
       run: |
