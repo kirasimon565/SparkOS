@@ -23,27 +23,25 @@ jobs:
 
     - name: Configure Secure Cloud Authentication
       run: |
-        # Fixed: Creating the configuration file EXACTLY where the CLI searches for it
         cat <<EOF > $HOME/crave.conf
         [User]
         username = ${{ secrets.CRAVE_USERNAME }}
         token = ${{ secrets.CRAVE_TOKEN }}
         EOF
-        # Redundant safety fallback copy into the active repo root directory
-        cp $HOME/crave.conf ./crave.conf
 
     - name: Detect Crave Project ID Dynamically
       run: |
         echo "======================================================="
         echo "   FETCHING ASSIGNED PROJECT ID FROM CRAVE CORES       "
         echo "======================================================="
-        # Now that authentication clears, crave list will cleanly output your profiles
-        PROJECT_ID=$(crave list | awk '$1 ~ /^[0-9]+$/ {print $1; exit}')
+        # Moving out of the git workspace prevents crave from triggering Zero-Conf checks
+        cd $HOME
+        PROJECT_ID=$(crave -c $HOME/crave.conf list | awk '$1 ~ /^[0-9]+$/ {print $1; exit}')
         echo "Detected Project ID: $PROJECT_ID"
         
         if [ -z "$PROJECT_ID" ]; then
           echo "Error: No active project IDs returned by your Crave account profile."
-          crave list
+          crave -c $HOME/crave.conf list
           exit 1
         fi
         echo "CRAVE_PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
@@ -53,7 +51,8 @@ jobs:
         echo "======================================================="
         echo "   LAUNCHING SPARKOS ENGINE ON REMOTE BUILD NODES      "
         echo "======================================================="
-        crave run --projectID ${{ env.CRAVE_PROJECT_ID }} --no-patch -- '
+        cd $HOME
+        crave -c $HOME/crave.conf run --projectID ${{ env.CRAVE_PROJECT_ID }} --no-patch -- '
           # 1. Initialize stable original AOSP build tree mapping
           repo init -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50
           
@@ -83,12 +82,13 @@ jobs:
 
     - name: Pull Compiled SparkOS Build Back Natively
       run: |
-        crave pull --projectID ${{ env.CRAVE_PROJECT_ID }} out/target/product/generic_arm64/system.img.xz
+        cd $HOME
+        crave -c $HOME/crave.conf pull --projectID ${{ env.CRAVE_PROJECT_ID }} out/target/product/generic_arm64/system.img.xz
 
     - name: Upload SparkOS Flashable Release
       uses: softprops/action-gh-release@v2
       with:
-        files: out/target/product/generic_arm64/system.img.xz
+        files: /home/runner/out/target/product/generic_arm64/system.img.xz
         tag_name: sparkos-alpha-v1
         name: SparkOS Alpha Release
       env:
