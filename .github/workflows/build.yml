@@ -26,13 +26,18 @@ jobs:
         CRAVE_USER: ${{ secrets.CRAVE_USERNAME }}
         CRAVE_TOK: ${{ secrets.CRAVE_TOKEN }}
       run: |
-        # Using Python to write the JSON file perfectly preserves special characters like $ or \
+        # Replicating your exact configuration schema using Python to ensure safety
         python3 -c '
         import os, json
         config = {
-            "host": "https://foss.crave.io",
             "username": os.environ["CRAVE_USER"],
-            "token": os.environ["CRAVE_TOK"]
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": os.environ["CRAVE_TOK"],
+                "User-Agent": "Crave"
+            },
+            "projects": [],
+            "server": "https://foss.crave.io/api"
         }
         with open(os.path.expanduser("~/crave.conf"), "w") as f:
             json.dump(config, f, indent=4)
@@ -44,7 +49,7 @@ jobs:
         echo "   FETCHING ASSIGNED PROJECT ID FROM CRAVE CORES       "
         echo "======================================================="
         cd $HOME
-        PROJECT_ID=$(crave -c $HOME/crave.conf list | awk '$1 ~ /^[0-9]+$/ {print $1; exit}')
+        PROJECT_ID=$(crave -c $HOME/crave.conf list | awk "$1 ~ /^[0-9]+$/ {print \$1; exit}")
         echo "Detected Project ID: $PROJECT_ID"
         
         if [ -z "$PROJECT_ID" ]; then
