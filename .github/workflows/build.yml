@@ -47,7 +47,7 @@ jobs:
         echo "======================================================="
         echo "   WRITING OFFICIAL AOSP POOL CONFIG TO WORKSPACE      "
         echo "======================================================="
-        # Locked to the exact community project name matching your account profile
+        # Matches the exact lowercase name 'aosp' verified from your project list
         cat <<EOF > $GITHUB_WORKSPACE/crave.yaml
         aosp:
           ignoreClientHostname: true
@@ -59,7 +59,10 @@ jobs:
         echo "   LAUNCHING SPARKOS ENGINE ON REMOTE BUILD NODES      "
         echo "======================================================="
         cd $GITHUB_WORKSPACE
-        # Explicitly passing projectID 35 to map to the public AOSP base tree allocation
+        
+        # Temporarily hide the .git folder to stop the CLI from validation-crashing on your repo URL
+        mv .git .git_bak
+        
         crave -c $HOME/crave.conf run --projectID 35 --no-patch -- "
           # 1. Initialize stable original AOSP build tree mapping
           repo init -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50
@@ -87,11 +90,18 @@ jobs:
           # 7. High-efficiency compression of the output partition artifact
           xz -z -9 out/target/product/generic_arm64/system.img
         "
+        
+        # Restore git configuration for the runner environment
+        mv .git_bak .git
 
     - name: Pull Compiled SparkOS Build Back Natively
       run: |
         cd $GITHUB_WORKSPACE
+        mv .git .git_bak || true
+        
         crave -c $HOME/crave.conf pull --projectID 35 out/target/product/generic_arm64/system.img.xz
+        
+        mv .git_bak .git || true
 
     - name: Upload SparkOS Flashable Release
       uses: softprops/action-gh-release@v2
