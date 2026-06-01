@@ -1,4 +1,4 @@
-name: SparkOS Core Builder
+name: SparkOS Cloud Core Builder
 
 on:
   push:
@@ -7,76 +7,70 @@ on:
   workflow_dispatch:
 
 jobs:
-  compile-sparkos:
+  compile-on-crave:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout SparkOS Controller
       uses: actions/checkout@v4
 
-    - name: Maximize Cloud Disk Space (Aggressive Purge)
+    - name: Setup Remote Crave CLI Tool
+      run: |
+        mkdir -p ${HOME}/bin
+        curl -sL https://raw.githubusercontent.com/accupara/crave/master/get_crave.sh | bash -s --
+        mv crave ${HOME}/bin/
+        echo "${HOME}/bin" >> $GITHUB_PATH
+
+    - name: Configure Secure Cloud Authentication
+      run: |
+        mkdir -p ~/.crave
+        cat <<EOF > ~/.crave/crave.conf
+        [User]
+        username = ${{ secrets.CRAVE_USERNAME }}
+        token = ${{ secrets.CRAVE_TOKEN }}
+        EOF
+
+    - name: Execute Remote AOSP Compile Sequence
       run: |
         echo "======================================================="
-        echo "   PURGING UNUSED RUNTIMES TO RECLAIM STORAGE          "
+        echo "   LAUNCHING SPARKOS ENGINE ON REMOTE BUILD NODES      "
         echo "======================================================="
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /opt/ghc
-        sudo rm -rf /opt/hostedtoolcache/CodeQL
-        sudo rm -rf /usr/local/share/chromium
-        sudo docker image prune --all --force
-        sudo apt-get clean
-        echo "Current Free Space Status:"
-        df -h /
+        crave run --no-patch -- '
+          # 1. Initialize stable original AOSP build tree mapping
+          repo init -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50
+          
+          # 2. Leverage Crave's internal high-speed network mirror caches for synchronization
+          /opt/crave/resync.sh
+          
+          # 3. Pull down your custom controller configurations and media layers
+          git clone https://github.com/kirasimon565/SparkOS.git -b main sparkos_overlay
+          
+          # 4. Seamlessly smash your cinematic boot assets over Google stock frameworks
+          if [ -d "sparkos_overlay/overlay" ]; then
+            rsync -avq sparkos_overlay/overlay/ ./
+          fi
+          
+          # 5. Authorize and fire branding variable changes
+          chmod +x sparkos_overlay/inject_branding.sh
+          ./sparkos_overlay/inject_branding.sh
+          
+          # 6. Execute full parallel framework compilation
+          source build/envsetup.sh
+          lunch aosp_arm64-trunk_staging-userdebug
+          m systemimage
+          
+          # 7. High-efficiency compression of the output partition artifact
+          xz -z -9 out/target/product/generic_arm64/system.img
+        '
 
-    - name: Configure Linux Build Environment
+    - name: Pull Compiled SparkOS Build Back Natively
       run: |
-        sudo apt-get update
-        sudo apt-get install -y git-core gnupg flex bison build-essential zip curl zlib1g-dev libncurses5-dev libssl-dev bc liblz4-tool python3 rsync
+        crave pull out/target/product/generic_arm64/system.img.xz
 
-    - name: Initialize Git Identity
-      run: |
-        git config --global user.name "SparkOS Developer"
-        git config --global user.email "developer@sparkos.internal"
-
-    - name: Install Google Repo Engine
-      run: |
-        mkdir -p ~/.bin
-        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/.bin/repo
-        chmod a+x ~/.bin/repo
-        echo "$HOME/.bin" >> $GITHUB_PATH
-
-    - name: Sync Pure AOSP Files (Corrected Lean Filter)
-      run: |
-        mkdir -p ~/aosp && cd ~/aosp
-        # We REMOVED '-pdk' from exclusions because it contains the vital build tools!
-        repo init --depth=1 --partial-clone --no-use-superproject -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50 -g default,-device,-partner
-        repo sync -c -j4 --no-tags --no-clone-bundle --force-sync
-
-    - name: Inject SparkOS Architecture & Overlays
-      run: |
-        if [ -d "$GITHUB_WORKSPACE/overlay" ]; then
-          rsync -avq $GITHUB_WORKSPACE/overlay/ ~/aosp/
-        fi
-        chmod +x $GITHUB_WORKSPACE/inject_branding.sh
-        $GITHUB_WORKSPACE/inject_branding.sh
-
-    - name: Run AOSP Compiler
-      run: |
-        cd ~/aosp
-        source build/envsetup.sh
-        lunch aosp_arm64-trunk_staging-userdebug
-        m systemimage -j$(nproc)
-
-    - name: Package Flashable GSI Artifacts
-      run: |
-        cd ~/aosp/out/target/product/generic_arm64/
-        xz -z -9 system.img
-        
-    - name: Upload SparkOS to Github Releases
+    - name: Upload SparkOS Flashable Release
       uses: softprops/action-gh-release@v2
       with:
-        files: ~/aosp/out/target/product/generic_arm64/system.img.xz
+        files: out/target/product/generic_arm64/system.img.xz
         tag_name: sparkos-alpha-v1
         name: SparkOS Alpha Release
       env:
