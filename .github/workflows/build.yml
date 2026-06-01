@@ -26,11 +26,10 @@ jobs:
         CRAVE_USER: ${{ secrets.CRAVE_USERNAME }}
         CRAVE_TOK: ${{ secrets.CRAVE_TOKEN }}
       run: |
-        # Using Python to write configs and cleanly sanitize hidden terminal control characters (\r)
         python3 -c '
         import os, json, subprocess
         
-        # 1. Generate pristine crave.conf file
+        # 1. Generate pristine crave.conf file in Home Directory
         config = {
             "username": os.environ["CRAVE_USER"],
             "headers": {
@@ -45,37 +44,44 @@ jobs:
         with open(crave_conf_path, "w") as f:
             json.dump(config, f, indent=4)
             
-        # 2. Extract and sanitize Project details
+        # 2. Extract and sanitize Project details by stripping table borders
         try:
-            result = subprocess.check_output(["crave", "-c", crave_conf_path, "list"], text=True)
+            raw_output = subprocess.check_output(["crave", "-c", crave_conf_path, "list"], text=True)
+            print("=== RAW CRAVE SERVER LIST ===")
+            print(raw_output)
+            print("=============================")
+            
             project_id = ""
             project_name = ""
             
-            for line in result.split("\n"):
-                parts = line.strip().split()
+            for line in raw_output.split("\n"):
+                clean_line = line.replace("|", " ").strip()
+                parts = clean_line.split()
+                
                 if parts and parts[0].isdigit():
                     project_id = parts[0]
                     project_name = parts[1]
                     break
                     
             if not project_id or not project_name:
-                project_id = "73"
-                project_name = "aosp"
+                raise Exception("Table parser found no numeric ID row.")
                 
-            print(f"Bound to Project ID: {project_id}")
-            print(f"Bound to Project Name: {project_name}")
+            print(f"Successfully Bound to Project ID: {project_id}")
+            print(f"Successfully Bound to Project Name: {project_name}")
             
-            # 3. Create flawless crave.json blueprint in the workspace root
-            with open("crave.json", "w") as f:
+            # 3. FIXED: Writing crave.json directly into the active GITHUB_WORKSPACE root
+            target_workspace = os.environ["GITHUB_WORKSPACE"]
+            with open(os.path.join(target_workspace, "crave.json"), "w") as f:
                 json.dump({"project": project_name}, f, indent=4)
                 
-            # 4. Export variables safely to the GitHub Environment
+            # 4. Export the verified ID to the GitHub Environment
             with open(os.environ["GITHUB_ENV"], "a") as ge:
                 ge.write(f"CRAVE_PROJECT_ID={project_id}\n")
                 
         except Exception as e:
-            print("Fallback to standard FOSS configuration defaults:", e)
-            with open("crave.json", "w") as f:
+            print("Parser Warning: Falling back to default baseline parameters:", e)
+            target_workspace = os.environ["GITHUB_WORKSPACE"]
+            with open(os.path.join(target_workspace, "crave.json"), "w") as f:
                 json.dump({"project": "aosp"}, f, indent=4)
             with open(os.environ["GITHUB_ENV"], "a") as ge:
                 ge.write("CRAVE_PROJECT_ID=73\n")
@@ -86,6 +92,7 @@ jobs:
         echo "======================================================="
         echo "   LAUNCHING SPARKOS ENGINE ON REMOTE BUILD NODES      "
         echo "======================================================="
+        cd $GITHUB_WORKSPACE
         crave -c $HOME/crave.conf run --projectID ${{ env.CRAVE_PROJECT_ID }} --no-patch -- "
           # 1. Initialize stable original AOSP build tree mapping
           repo init -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50
@@ -116,6 +123,7 @@ jobs:
 
     - name: Pull Compiled SparkOS Build Back Natively
       run: |
+        cd $GITHUB_WORKSPACE
         crave -c $HOME/crave.conf pull --projectID ${{ env.CRAVE_PROJECT_ID }} out/target/product/generic_arm64/system.img.xz
 
     - name: Upload SparkOS Flashable Release
