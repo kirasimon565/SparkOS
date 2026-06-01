@@ -26,7 +26,6 @@ jobs:
         CRAVE_USER: ${{ secrets.CRAVE_USERNAME }}
         CRAVE_TOK: ${{ secrets.CRAVE_TOKEN }}
       run: |
-        # Replicating your exact configuration schema using Python to ensure safety
         python3 -c '
         import os, json
         config = {
@@ -49,7 +48,8 @@ jobs:
         echo "   FETCHING ASSIGNED PROJECT ID FROM CRAVE CORES       "
         echo "======================================================="
         cd $HOME
-        PROJECT_ID=$(crave -c $HOME/crave.conf list | awk "$1 ~ /^[0-9]+$/ {print \$1; exit}")
+        # Fixed: Using strict single quotes so Bash leaves the Awk column selectors alone
+        PROJECT_ID=$(crave -c $HOME/crave.conf list | awk '$1 ~ /^[0-9]+$/ {print $1; exit}')
         echo "Detected Project ID: $PROJECT_ID"
         
         if [ -z "$PROJECT_ID" ]; then
