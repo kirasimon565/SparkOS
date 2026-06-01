@@ -30,12 +30,30 @@ jobs:
         token = ${{ secrets.CRAVE_TOKEN }}
         EOF
 
+    - name: Detect Crave Project ID Dynamically
+      run: |
+        echo "======================================================="
+        echo "   FETCHING ASSIGNED PROJECT ID FROM CRAVE CORES       "
+        echo "======================================================="
+        # Run crave list and parse the first available numeric project ID from your account
+        PROJECT_ID=$(crave list | awk '$1 ~ /^[0-9]+$/ {print $1; exit}')
+        echo "Detected Project ID: $PROJECT_ID"
+        
+        if [ -z "$PROJECT_ID" ]; then
+          echo "Error: No active project IDs returned by your Crave account profile."
+          crave list
+          exit 1
+        fi
+        # Expose the variable across the remaining workflow stages
+        echo "CRAVE_PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+
     - name: Execute Remote AOSP Compile Sequence
       run: |
         echo "======================================================="
         echo "   LAUNCHING SPARKOS ENGINE ON REMOTE BUILD NODES      "
         echo "======================================================="
-        crave run --no-patch -- '
+        # Bypassing zero-conf by injecting the specific project id parameter
+        crave run --projectID ${{ env.CRAVE_PROJECT_ID }} --no-patch -- '
           # 1. Initialize stable original AOSP build tree mapping
           repo init -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50
           
@@ -65,7 +83,7 @@ jobs:
 
     - name: Pull Compiled SparkOS Build Back Natively
       run: |
-        crave pull out/target/product/generic_arm64/system.img.xz
+        crave pull --projectID ${{ env.CRAVE_PROJECT_ID }} out/target/product/generic_arm64/system.img.xz
 
     - name: Upload SparkOS Flashable Release
       uses: softprops/action-gh-release@v2
