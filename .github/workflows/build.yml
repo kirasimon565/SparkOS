@@ -42,14 +42,22 @@ jobs:
             json.dump(config, f, indent=4)
         '
 
-    - name: Create FOSS Base Project Blueprint (crave.yaml)
+    - name: Print Allowed Project Names
       run: |
         echo "======================================================="
-        echo "   MAPPING WORKSPACE TO THE SHARED PUBLIC AOSP POOL    "
+        echo "       YOUR OFFICIAL PERMITTED PROJECTS LIST           "
         echo "======================================================="
-        # The top-level key MUST be a recognized community project like "aosp"
+        # This will output the exact target names allowed for your crave.yaml file
+        crave -c $HOME/crave.conf list || true
+
+    - name: Create Workspace Blueprint (crave.yaml)
+      run: |
+        echo "======================================================="
+        echo "   WRITING MODERN CONFIG TO WORKSPACE ROOT            "
+        echo "======================================================="
+        # NOTE: Change "Base Project Name" below to match an exact Name from the step above
         cat <<EOF > $GITHUB_WORKSPACE/crave.yaml
-        aosp:
+        "Base Project Name":
           ignoreClientHostname: true
         EOF
 
@@ -59,7 +67,6 @@ jobs:
         echo "   LAUNCHING SPARKOS ENGINE ON REMOTE BUILD NODES      "
         echo "======================================================="
         cd $GITHUB_WORKSPACE
-        # Dropped --projectID flag to let crave match via crave.yaml layout implicitly
         crave -c $HOME/crave.conf run --no-patch -- "
           # 1. Initialize stable original AOSP build tree mapping
           repo init -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50
