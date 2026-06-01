@@ -42,33 +42,36 @@ jobs:
             json.dump(config, f, indent=4)
         '
 
-    - name: Detect Crave Project ID Dynamically
+    - name: Detect and Bind Crave Project
       run: |
         echo "======================================================="
-        echo "   FETCHING ASSIGNED PROJECT ID FROM CRAVE CORES       "
+        echo "   FETCHING MAPPED PROJECT DETAILS FROM CRAVE          "
         echo "======================================================="
         cd $HOME
         PROJECT_ID=$(crave -c $HOME/crave.conf list | awk '$1 ~ /^[0-9]+$/ {print $1; exit}')
-        echo "Detected Project ID: $PROJECT_ID"
+        PROJECT_NAME=$(crave -c $HOME/crave.conf list | awk '$1 ~ /^[0-9]+$/ {print $2; exit}')
         
-        if [ -z "$PROJECT_ID" ]; then
-          echo "Error: No active project IDs returned by your Crave account profile."
+        echo "Detected Project ID: $PROJECT_ID"
+        echo "Detected Project Name: $PROJECT_NAME"
+        
+        if [ -z "$PROJECT_ID" ] || [ -z "$PROJECT_NAME" ]; then
+          echo "Error: Could not retrieve active project details from your Crave profile."
           crave -c $HOME/crave.conf list
           exit 1
         fi
+        
         echo "CRAVE_PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+        echo "CRAVE_PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_ENV
 
     - name: Create Project Workspace Blueprint
       run: |
         echo "======================================================="
         echo "   GENERATING WORKSPACE BLUEPRINT FILE (CRAVE.JSON)    "
         echo "======================================================="
-        # Injects the mandatory environment mapping so Crave mounts the pre-cached AOSP node
+        # Writing the exact key-value mapping structure expected by the Crave CLI client
         cat <<EOF > crave.json
         {
-          "workspace": {
-            "baseDirectory": "aosp"
-          }
+          "project": "${{ env.CRAVE_PROJECT_NAME }}"
         }
         EOF
 
