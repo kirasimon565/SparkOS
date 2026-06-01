@@ -26,7 +26,6 @@ jobs:
         CRAVE_USER: ${{ secrets.CRAVE_USERNAME }}
         CRAVE_TOK: ${{ secrets.CRAVE_TOKEN }}
       run: |
-        # Writing the raw JSON authentication tokens directly to the home folder
         python3 -c '
         import os, json
         config = {
@@ -43,28 +42,16 @@ jobs:
             json.dump(config, f, indent=4)
         '
 
-    - name: Create Workspace Blueprint (crave.json)
+    - name: Create FOSS Base Project Blueprint (crave.yaml)
       run: |
         echo "======================================================="
-        echo "   WRITING BLUEPRINT DIRECTLY TO WORKSPACE ROOT         "
+        echo "   MAPPING WORKSPACE TO THE SHARED PUBLIC AOSP POOL    "
         echo "======================================================="
-        # Initializing clean template targeting the shared community AOSP pool
-        cat <<EOF > $GITHUB_WORKSPACE/crave.json
-        {
-          "project": "aosp"
-        }
+        # The top-level key MUST be a recognized community project like "aosp"
+        cat <<EOF > $GITHUB_WORKSPACE/crave.yaml
+        aosp:
+          ignoreClientHostname: true
         EOF
-
-    - name: Diagnostic Debug Block
-      run: |
-        echo "======================================================="
-        echo "           RUNNING CRAVE ENVIRONMENT DIAGNOSTICS        "
-        echo "======================================================="
-        cd $GITHUB_WORKSPACE
-        echo "-> Local crave.json Contents:"
-        cat crave.json
-        echo -e "\n-> Raw Crave List Output:"
-        crave -c $HOME/crave.conf list || true
 
     - name: Execute Remote AOSP Compile Sequence
       run: |
@@ -72,7 +59,7 @@ jobs:
         echo "   LAUNCHING SPARKOS ENGINE ON REMOTE BUILD NODES      "
         echo "======================================================="
         cd $GITHUB_WORKSPACE
-        # Executing the run invocation using your clean environment rules
+        # Dropped --projectID flag to let crave match via crave.yaml layout implicitly
         crave -c $HOME/crave.conf run --no-patch -- "
           # 1. Initialize stable original AOSP build tree mapping
           repo init -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50
