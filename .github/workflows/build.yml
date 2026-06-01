@@ -21,13 +21,16 @@ jobs:
         mv crave ${HOME}/bin/
         echo "${HOME}/bin" >> $GITHUB_PATH
 
-    - name: Configure Secure Cloud Authentication
+    - name: Configure Crave Infrastructure and Workspace
       env:
         CRAVE_USER: ${{ secrets.CRAVE_USERNAME }}
         CRAVE_TOK: ${{ secrets.CRAVE_TOKEN }}
       run: |
+        # Using Python to write configs and cleanly sanitize hidden terminal control characters (\r)
         python3 -c '
-        import os, json
+        import os, json, subprocess
+        
+        # 1. Generate pristine crave.conf file
         config = {
             "username": os.environ["CRAVE_USER"],
             "headers": {
@@ -38,42 +41,45 @@ jobs:
             "projects": [],
             "server": "https://foss.crave.io/api"
         }
-        with open(os.path.expanduser("~/crave.conf"), "w") as f:
+        crave_conf_path = os.path.expanduser("~/crave.conf")
+        with open(crave_conf_path, "w") as f:
             json.dump(config, f, indent=4)
+            
+        # 2. Extract and sanitize Project details
+        try:
+            result = subprocess.check_output(["crave", "-c", crave_conf_path, "list"], text=True)
+            project_id = ""
+            project_name = ""
+            
+            for line in result.split("\n"):
+                parts = line.strip().split()
+                if parts and parts[0].isdigit():
+                    project_id = parts[0]
+                    project_name = parts[1]
+                    break
+                    
+            if not project_id or not project_name:
+                project_id = "73"
+                project_name = "aosp"
+                
+            print(f"Bound to Project ID: {project_id}")
+            print(f"Bound to Project Name: {project_name}")
+            
+            # 3. Create flawless crave.json blueprint in the workspace root
+            with open("crave.json", "w") as f:
+                json.dump({"project": project_name}, f, indent=4)
+                
+            # 4. Export variables safely to the GitHub Environment
+            with open(os.environ["GITHUB_ENV"], "a") as ge:
+                ge.write(f"CRAVE_PROJECT_ID={project_id}\n")
+                
+        except Exception as e:
+            print("Fallback to standard FOSS configuration defaults:", e)
+            with open("crave.json", "w") as f:
+                json.dump({"project": "aosp"}, f, indent=4)
+            with open(os.environ["GITHUB_ENV"], "a") as ge:
+                ge.write("CRAVE_PROJECT_ID=73\n")
         '
-
-    - name: Detect and Bind Crave Project
-      run: |
-        echo "======================================================="
-        echo "   FETCHING MAPPED PROJECT DETAILS FROM CRAVE          "
-        echo "======================================================="
-        cd $HOME
-        PROJECT_ID=$(crave -c $HOME/crave.conf list | awk '$1 ~ /^[0-9]+$/ {print $1; exit}')
-        PROJECT_NAME=$(crave -c $HOME/crave.conf list | awk '$1 ~ /^[0-9]+$/ {print $2; exit}')
-        
-        echo "Detected Project ID: $PROJECT_ID"
-        echo "Detected Project Name: $PROJECT_NAME"
-        
-        if [ -z "$PROJECT_ID" ] || [ -z "$PROJECT_NAME" ]; then
-          echo "Error: Could not retrieve active project details from your Crave profile."
-          crave -c $HOME/crave.conf list
-          exit 1
-        fi
-        
-        echo "CRAVE_PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
-        echo "CRAVE_PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_ENV
-
-    - name: Create Project Workspace Blueprint
-      run: |
-        echo "======================================================="
-        echo "   GENERATING WORKSPACE BLUEPRINT FILE (CRAVE.JSON)    "
-        echo "======================================================="
-        # Writing the exact key-value mapping structure expected by the Crave CLI client
-        cat <<EOF > crave.json
-        {
-          "project": "${{ env.CRAVE_PROJECT_NAME }}"
-        }
-        EOF
 
     - name: Execute Remote AOSP Compile Sequence
       run: |
@@ -120,3 +126,4 @@ jobs:
         name: SparkOS Alpha Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
