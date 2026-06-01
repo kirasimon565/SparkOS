@@ -21,15 +21,14 @@ jobs:
         mv crave ${HOME}/bin/
         echo "${HOME}/bin" >> $GITHUB_PATH
 
-    - name: Configure Crave Infrastructure and Workspace
+    - name: Configure Secure Cloud Authentication
       env:
         CRAVE_USER: ${{ secrets.CRAVE_USERNAME }}
         CRAVE_TOK: ${{ secrets.CRAVE_TOKEN }}
       run: |
+        # Writing the raw JSON authentication tokens directly to the home folder
         python3 -c '
-        import os, json, subprocess
-        
-        # 1. Generate pristine crave.conf file in Home Directory
+        import os, json
         config = {
             "username": os.environ["CRAVE_USER"],
             "headers": {
@@ -40,52 +39,32 @@ jobs:
             "projects": [],
             "server": "https://foss.crave.io/api"
         }
-        crave_conf_path = os.path.expanduser("~/crave.conf")
-        with open(crave_conf_path, "w") as f:
+        with open(os.path.expanduser("~/crave.conf"), "w") as f:
             json.dump(config, f, indent=4)
-            
-        # 2. Extract and sanitize Project details by stripping table borders
-        try:
-            raw_output = subprocess.check_output(["crave", "-c", crave_conf_path, "list"], text=True)
-            print("=== RAW CRAVE SERVER LIST ===")
-            print(raw_output)
-            print("=============================")
-            
-            project_id = ""
-            project_name = ""
-            
-            for line in raw_output.split("\n"):
-                clean_line = line.replace("|", " ").strip()
-                parts = clean_line.split()
-                
-                if parts and parts[0].isdigit():
-                    project_id = parts[0]
-                    project_name = parts[1]
-                    break
-                    
-            if not project_id or not project_name:
-                raise Exception("Table parser found no numeric ID row.")
-                
-            print(f"Successfully Bound to Project ID: {project_id}")
-            print(f"Successfully Bound to Project Name: {project_name}")
-            
-            # 3. FIXED: Writing crave.json directly into the active GITHUB_WORKSPACE root
-            target_workspace = os.environ["GITHUB_WORKSPACE"]
-            with open(os.path.join(target_workspace, "crave.json"), "w") as f:
-                json.dump({"project": project_name}, f, indent=4)
-                
-            # 4. Export the verified ID to the GitHub Environment
-            with open(os.environ["GITHUB_ENV"], "a") as ge:
-                ge.write(f"CRAVE_PROJECT_ID={project_id}\n")
-                
-        except Exception as e:
-            print("Parser Warning: Falling back to default baseline parameters:", e)
-            target_workspace = os.environ["GITHUB_WORKSPACE"]
-            with open(os.path.join(target_workspace, "crave.json"), "w") as f:
-                json.dump({"project": "aosp"}, f, indent=4)
-            with open(os.environ["GITHUB_ENV"], "a") as ge:
-                ge.write("CRAVE_PROJECT_ID=73\n")
         '
+
+    - name: Create Workspace Blueprint (crave.json)
+      run: |
+        echo "======================================================="
+        echo "   WRITING BLUEPRINT DIRECTLY TO WORKSPACE ROOT         "
+        echo "======================================================="
+        # Initializing clean template targeting the shared community AOSP pool
+        cat <<EOF > $GITHUB_WORKSPACE/crave.json
+        {
+          "project": "aosp"
+        }
+        EOF
+
+    - name: Diagnostic Debug Block
+      run: |
+        echo "======================================================="
+        echo "           RUNNING CRAVE ENVIRONMENT DIAGNOSTICS        "
+        echo "======================================================="
+        cd $GITHUB_WORKSPACE
+        echo "-> Local crave.json Contents:"
+        cat crave.json
+        echo -e "\n-> Raw Crave List Output:"
+        crave -c $HOME/crave.conf list || true
 
     - name: Execute Remote AOSP Compile Sequence
       run: |
@@ -93,7 +72,8 @@ jobs:
         echo "   LAUNCHING SPARKOS ENGINE ON REMOTE BUILD NODES      "
         echo "======================================================="
         cd $GITHUB_WORKSPACE
-        crave -c $HOME/crave.conf run --projectID ${{ env.CRAVE_PROJECT_ID }} --no-patch -- "
+        # Executing the run invocation using your clean environment rules
+        crave -c $HOME/crave.conf run --no-patch -- "
           # 1. Initialize stable original AOSP build tree mapping
           repo init -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50
           
@@ -124,7 +104,7 @@ jobs:
     - name: Pull Compiled SparkOS Build Back Natively
       run: |
         cd $GITHUB_WORKSPACE
-        crave -c $HOME/crave.conf pull --projectID ${{ env.CRAVE_PROJECT_ID }} out/target/product/generic_arm64/system.img.xz
+        crave -c $HOME/crave.conf pull out/target/product/generic_arm64/system.img.xz
 
     - name: Upload SparkOS Flashable Release
       uses: softprops/action-gh-release@v2
@@ -134,4 +114,3 @@ jobs:
         name: SparkOS Alpha Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        
