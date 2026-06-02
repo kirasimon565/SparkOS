@@ -59,12 +59,11 @@ jobs:
         echo "======================================================="
         cd $GITHUB_WORKSPACE
         
-        # Spoof the local origin URL to perfectly match the official FOSS community template
         git remote set-url origin https://android.googlesource.com/platform/manifest
         
         crave -c $HOME/crave.conf run --projectID 35 --no-patch -- "
-          # 1. Initialize stable original AOSP build tree mapping
-          repo init -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50
+          # 1. OPTIMIZED: Uses shallow clone depth and strips out unnecessary platform histories
+          repo init --depth=1 --no-repo-verify -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50 -g default,-mips,-darwin,-notdefault
           
           # 2. Leverage Crave's internal high-speed network mirror caches for synchronization
           /opt/crave/resync.sh
