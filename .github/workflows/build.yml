@@ -62,10 +62,10 @@ jobs:
         git remote set-url origin https://android.googlesource.com/platform/manifest
         
         crave -c $HOME/crave.conf run --projectID 35 --no-patch -- "
-          # 1. OPTIMIZED: Uses shallow clone depth and strips out unnecessary platform histories
-          repo init --depth=1 --no-repo-verify -u https://android.googlesource.com/platform/manifest -b android-14.0.0_r50 -g default,-mips,-darwin,-notdefault
+          # 1. Purge legacy overlay components to prevent merge conflicts
+          rm -rf sparkos_overlay
           
-          # 2. Leverage Crave's internal high-speed network mirror caches for synchronization
+          # 2. Instantly realign the workspace utilizing Crave's internal high-speed local mirror
           /opt/crave/resync.sh
           
           # 3. Pull down your custom controller configurations and media layers
