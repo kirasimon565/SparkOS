@@ -52,6 +52,14 @@ jobs:
           ignoreClientHostname: true
         EOF
 
+    - name: Break Pre-Existing Remote Server Locks
+      run: |
+        echo "======================================================="
+        echo "   PURGING ORPHANED ZOMBIE SESSIONS FROM THE QUEUE     "
+        echo "======================================================="
+        # Forces the Crave server backend to clear out any hung threads before continuing
+        crave -c $HOME/crave.conf abort --projectID 35 || true
+
     - name: Execute Remote AOSP Compile Sequence
       run: |
         echo "======================================================="
