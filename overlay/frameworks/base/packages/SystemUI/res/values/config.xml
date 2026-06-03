@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Expand the Quick Settings grid to a high-density 4x4 matrix -->
+    <integer name="quick_settings_num_columns">4</integer>
+    <integer name="quick_settings_max_rows">4</integer>
+    
+    <!-- Disable standard wallpaper blur engine to enforce high-performance, raw alpha transparency windows -->
+    <bool name="config_use_behind_blur">false</bool>
+    
+    <!-- Force the system to display full notifications in a unified chronological feed -->
+    <bool name="config_renderNotificationsAsGroup">false</bool>
+    
+    <!-- Show exact network speed activity inside the status bar HUD natively -->
+    <bool name="config_showNetworkActivity">true</bool>
+</resources>
