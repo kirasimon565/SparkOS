@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pure AMOLED Pitch Black Backgrounds -->
+    <color name="background_device_default_dark">#000000</color>
+    <color name="background_material_dark">#000000</color>
+    <color name="surface_dark">#0A0A0A</color>
+
+    <!-- Your Signature Luminous Amber Orange Spark Accent -->
+    <color name="accent_device_default_dark">#FF8C00</color>
+    <color name="accent_material_dark">#FF8C00</color>
+    <color name="highlighted_text_dark">#FF9F00</color>
+
+    <!-- System Text and Component States -->
+    <color name="primary_text_default_material_dark">#FFFFFF</color>
+    <color name="secondary_text_default_material_dark">#A0A0A0</color>
+</resources>
