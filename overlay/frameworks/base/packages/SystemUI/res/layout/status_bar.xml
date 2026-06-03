@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.android.systemui.statusbar.phone.PhoneStatusBarView 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:systemui="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/status_bar"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/status_bar_height"
+    android:background="@android:color/transparent"
+    android:focusable="false"
+    android:descendantFocusability="afterDescendants">
+
+    <FrameLayout
+        android:id="@+id/status_bar_contents"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingStart="@dimen/status_bar_padding_start"
+        android:paddingEnd="@dimen/status_bar_padding_end">
+
+        <!-- LEFT VIEW: Notifications & Active Processing Matrix -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="start|center_vertical"
+            android:orientation="horizontal">
+            <include layout="@layout/status_bar_notification_icon_container" />
+        </LinearLayout>
+
+        <!-- CENTER VIEW: Center-Locked Tactical System Clock -->
+        <com.android.systemui.statusbar.policy.Clock
+            android:id="@+id/clock"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:singleLine="true"
+            android:textAppearance="@style/TextAppearance.StatusBar.Clock"
+            android:textColor="#FF8C00"
+            android:textStyle="bold" />
+
+        <!-- RIGHT VIEW: Hardware Status Strip & Diagnostic Battery -->
+        <LinearLayout
+            android:id="@+id/system_icon_area"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="end|center_vertical"
+            android:orientation="horizontal">
+            <include layout="@layout/system_icons" />
+        </LinearLayout>
+
+    </FrameLayout>
+</com.android.systemui.statusbar.phone.PhoneStatusBarView>
