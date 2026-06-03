@@ -1,10 +1,7 @@
 name: SparkOS Cloud Core Builder
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_dispatch: # Only triggers manually when you press the button
 
 jobs:
   compile-on-crave:
@@ -61,6 +58,7 @@ jobs:
         crave -c $HOME/crave.conf abort --projectID 35 || true
 
     - name: Execute Remote AOSP Compile Sequence
+      timeout-minutes: 30 # Slices the runner if stuck in a congested queue for over 30 mins
       run: |
         echo "======================================================="
         echo "   LAUNCHING SPARKOS ENGINE ON REMOTE BUILD NODES      "
