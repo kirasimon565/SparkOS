@@ -12,4 +12,7 @@
     
     <!-- Show exact network speed activity inside the status bar HUD natively -->
     <bool name="config_showNetworkActivity">true</bool>
+
+        <!-- Enforce raw system percentage readout system-wide by default -->
+    <integer name="config_defaultBatteryPercentageSetting">1</integer>
 </resources>
