@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Lock Screen Charging Telemetry Strings -->
+    <string name="keyguard_plugged_in">⚡ SYS_PWR: ONLINE // CAP: %1$s</string>
+    <string name="keyguard_plugged_in_charging_fast">⚡ MATRIX_CORE: FAST_CHRG_ACTIVE // CAP: %1$s</string>
+    <string name="keyguard_plugged_in_charging_slow">⚡ MATRIX_CORE: LOW_AMP_TRICKLE // CAP: %1$s</string>
+    <string name="keyguard_indication_charging_time">⚡ TERMINAL_READY: %1$s TO FULL_DECOUPLE</string>
+</resources>
