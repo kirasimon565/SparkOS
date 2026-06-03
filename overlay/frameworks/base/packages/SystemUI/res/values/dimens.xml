@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shrink and sharpen status bar icons for a dense HUD look -->
+    <dimen name="status_bar_icon_size">14dp</dimen>
+    <dimen name="status_bar_icon_drawing_size">13.0dp</dimen>
+    
+    <!-- Flatten status bar height and compress vertical padding -->
+    <dimen name="status_bar_height">24dp</dimen>
+    <dimen name="status_bar_padding_start">12dp</dimen>
+    <dimen name="status_bar_padding_end">12dp</dimen>
+
+    <!-- Strip all standard card rounded curves from notification stacks -->
+    <dimen name="notification_corner_radius">0dp</dimen>
+    <dimen name="notification_messaging_image_corner_radius">0dp</dimen>
+    
+    <!-- Compress space between notification items to form a seamless terminal stack -->
+    <dimen name="notification_children_container_top_margin">0dp</dimen>
+    <dimen name="notification_children_divider_height">1dp</dimen>
+    <dimen name="notification_side_paddings">0dp</dimen>
+</resources>
