@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- System Shade Core Tints -->
+    <color name="qs_background_dark">#000000</color>
+    <color name="qs_background_primary">#000000</color>
+    
+    <!-- Laser Neon Amber Highlights for Active Panel States -->
+    <color name="qs_tile_background_active">#FF8C00</color>
+    <color name="notification_guts_header_text_color">#FF8C00</color>
+    
+    <!-- Inactive States Drop Into Cold Muted Grays -->
+    <color name="qs_tile_background_inactive">#111111</color>
+    <color name="notification_material_background_color">#0A0A0A</color>
+</resources>
