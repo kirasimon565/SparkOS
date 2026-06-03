@@ -17,4 +17,12 @@
     <dimen name="notification_children_container_top_margin">0dp</dimen>
     <dimen name="notification_children_divider_height">1dp</dimen>
     <dimen name="notification_side_paddings">0dp</dimen>
+
+    <!-- Completely compress the battery icon outline to isolate raw data text -->
+    <dimen name="status_bar_battery_icon_width">0dp</dimen>
+    <dimen name="status_bar_battery_icon_height">0dp</dimen>
+    
+    <!-- Emphasize the telemetry text size for maximum readability -->
+    <dimen name="battery_percent_text_size">11sp</dimen>
+    <dimen name="battery_percent_padding_start">4dp</dimen>
 </resources>
