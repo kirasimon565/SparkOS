@@ -88,7 +88,7 @@ jobs:
           
           # 6. Execute full parallel framework compilation
           source build/envsetup.sh
-          lunch aosp_arm64-trunk_staging-userdebug
+          lunch aosp_arm64-ap2a-userdebug
           m systemimage
           
           # 7. High-efficiency compression of the output partition artifact
