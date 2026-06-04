@@ -15,9 +15,15 @@ if [ -f "$BUILD_PROP" ]; then
 fi
 
 # 2. Modify system core product variables cosmetically
-# Leaving PRODUCT_NAME and PRODUCT_DEVICE intact preserves the generic GSI compilation targets
 PRODUCT_CONFIG="$AOSP_DIR/build/make/target/product/aosp_arm64.mk"
 if [ -f "$PRODUCT_CONFIG" ]; then
+    echo "-> Purging cached workspace modifications from previous runs..."
+    # FORCE HEAL: Restores the core compiler targets to their exact stock names
+    sed -i 's/PRODUCT_NAME := .*/PRODUCT_NAME := aosp_arm64/g' "$PRODUCT_CONFIG"
+    sed -i 's/PRODUCT_DEVICE := .*/PRODUCT_DEVICE := generic_arm64/g' "$PRODUCT_CONFIG"
+    echo "-> Workspace corruption cleared. Targets reset to generic_arm64."
+
+    # Now apply the completely safe cosmetic visibility variables
     sed -i 's/PRODUCT_BRAND := .*/PRODUCT_BRAND := SparkOS/g' "$PRODUCT_CONFIG"
     sed -i 's/PRODUCT_MANUFACTURER := .*/PRODUCT_MANUFACTURER := SparkOS/g' "$PRODUCT_CONFIG"
     
