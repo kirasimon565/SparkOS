@@ -86,12 +86,15 @@ jobs:
           chmod +x sparkos_overlay/inject_branding.sh
           ./sparkos_overlay/inject_branding.sh
           
-          # 6. Execute full parallel framework compilation
+          # 6. Clear stale cache blocks from older trunk_staging attempts to prevent Soong corruption
+          rm -rf out
+          
+          # 7. Execute full parallel framework compilation
           source build/envsetup.sh
           lunch aosp_arm64-ap2a-userdebug
           m systemimage
           
-          # 7. High-efficiency compression of the output partition artifact
+          # 8. High-efficiency compression of the output partition artifact
           xz -z -9 out/target/product/generic_arm64/system.img
         "
 
